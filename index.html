@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SC06 | Multi-Stop Route Optimizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">SC</div>
+      <div>
+        <div class="eyebrow">SOFT COMPUTING CAPSTONE</div>
+        <h1>Multi-Stop Route Optimizer</h1>
+      </div>
+    </div>
+    <div class="top-status">
+      <span class="status-dot"></span>
+      <span>Local simulation</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="hero">
+      <div>
+        <span class="pill">Genetic Algorithm • Permutation GA</span>
+        <h2>Plan a route that balances <span>distance, traffic & priority.</span></h2>
+        <p>
+          A decision-support prototype for campus shuttle and delivery routing.
+          Compare a Soft Computing solution against a nearest-neighbour greedy baseline.
+        </p>
+      </div>
+      <div class="hero-stat">
+        <strong id="heroImprovement">—</strong>
+        <span>GA distance vs baseline</span>
+      </div>
+    </section>
+
+    <section class="control-panel card">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">01 / SCENARIO</span>
+          <h3>Configure the routing problem</h3>
+        </div>
+        <button class="ghost-btn" id="randomizeBtn">↻ Randomize scenario</button>
+      </div>
+
+      <div class="controls-grid">
+        <label>
+          <span>Number of stops</span>
+          <input id="stopCount" type="range" min="5" max="12" value="8">
+          <output id="stopCountValue">8 stops</output>
+        </label>
+
+        <label>
+          <span>Population size</span>
+          <input id="population" type="number" min="20" max="500" value="100">
+          <small>GA candidate routes</small>
+        </label>
+
+        <label>
+          <span>Generations</span>
+          <input id="generations" type="number" min="20" max="1000" value="250">
+          <small>Evolution iterations</small>
+        </label>
+
+        <label>
+          <span>Mutation rate</span>
+          <input id="mutation" type="range" min="1" max="40" value="12">
+          <output id="mutationValue">12%</output>
+        </label>
+
+        <label>
+          <span>Traffic condition</span>
+          <select id="traffic">
+            <option value="0.90">Low traffic</option>
+            <option value="1.00" selected>Normal traffic</option>
+            <option value="1.20">Heavy traffic</option>
+            <option value="1.40">Peak / uncertain</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Priority influence</span>
+          <input id="priorityWeight" type="range" min="0" max="100" value="45">
+          <output id="priorityValue">45%</output>
+        </label>
+      </div>
+
+      <div class="stops-editor">
+        <div class="editor-title">
+          <div>
+            <span class="section-kicker">STOP DATA</span>
+            <h4>Destinations & delivery priority</h4>
+          </div>
+          <span class="hint">Edit priorities, then optimize</span>
+        </div>
+        <div id="stopsTable" class="stops-table"></div>
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" id="optimizeBtn">
+          <span>▶</span> Run Genetic Algorithm
+        </button>
+        <div class="run-note" id="runStatus">Ready to optimize this scenario.</div>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <div class="card route-card">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">02 / ROUTE</span>
+            <h3>Optimized route</h3>
+          </div>
+          <span class="badge" id="routeBadge">Not run</span>
+        </div>
+        <div class="route-visual" id="routeVisual"></div>
+        <div class="route-order" id="routeOrder"></div>
+      </div>
+
+      <div class="card metrics-card">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">03 / RESULTS</span>
+            <h3>Decision summary</h3>
+          </div>
+        </div>
+        <div class="metric-list">
+          <div class="metric">
+            <span>GA distance</span>
+            <strong id="gaDistance">—</strong>
+            <small>km</small>
+          </div>
+          <div class="metric">
+            <span>Baseline distance</span>
+            <strong id="baselineDistance">—</strong>
+            <small>km</small>
+          </div>
+          <div class="metric">
+            <span>Estimated travel time</span>
+            <strong id="gaTime">—</strong>
+            <small>min</small>
+          </div>
+          <div class="metric">
+            <span>Priority-aware cost</span>
+            <strong id="gaCost">—</strong>
+            <small>score</small>
+          </div>
+        </div>
+        <div class="comparison">
+          <div class="comparison-head">
+            <span>Improvement over greedy baseline</span>
+            <strong id="improvementText">—</strong>
+          </div>
+          <div class="bar"><i id="improvementBar"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lower-grid">
+      <div class="card chart-card">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">04 / CONVERGENCE</span>
+            <h3>GA fitness over generations</h3>
+          </div>
+          <span class="mini-legend"><i></i> Best fitness</span>
+        </div>
+        <canvas id="convergenceChart" width="900" height="300"></canvas>
+      </div>
+
+      <div class="card baseline-card">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">05 / BASELINE</span>
+            <h3>Greedy comparison</h3>
+          </div>
+        </div>
+        <div id="baselineRoute" class="baseline-route">Run the optimizer to compare routes.</div>
+        <div class="baseline-note">
+          <strong>Nearest-neighbour</strong>
+          <p>
+            Starts at the depot and repeatedly chooses the closest unvisited
+            destination. It is fast, deterministic and intentionally rigid.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card methodology">
+      <div>
+        <span class="section-kicker">06 / ALGORITHM</span>
+        <h3>What this prototype exposes</h3>
+      </div>
+      <div class="method-grid">
+        <div><span>01</span><strong>Encoding</strong><p>Each chromosome is a permutation of stop IDs.</p></div>
+        <div><span>02</span><strong>Selection</strong><p>Tournament selection favours lower-cost routes.</p></div>
+        <div><span>03</span><strong>Crossover</strong><p>Order crossover preserves valid permutations.</p></div>
+        <div><span>04</span><strong>Mutation</strong><p>Swap mutation introduces route diversity.</p></div>
+        <div><span>05</span><strong>Fitness</strong><p>Distance, traffic and priority combine into one cost.</p></div>
+        <div><span>06</span><strong>Baseline</strong><p>Nearest-neighbour gives a measurable reference point.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>SC06 • Multi-Stop Campus Shuttle / Delivery Route Optimizer</span>
+    <span>Galgotias University • 2026</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
